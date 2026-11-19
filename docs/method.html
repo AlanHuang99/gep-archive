@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Method: GEP</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="name" href="./">GEP <span>GitHub Events Preservation</span></a>
+  <nav class="site">
+    <a href="./">Overview</a>
+    <a href="data.html">Data</a>
+    <a href="method.html" aria-current="page">Method</a>
+    <a href="gaps.html">Known gaps</a>
+  </nav>
+</div></header>
+
+<main><div class="wrap">
+<h1>Collection and completeness</h1>
+
+<h2>The feed</h2>
+<p>GitHub publishes public activity (pushes, pull requests, issues, comments, reviews, releases, forks, stars and other event types) through its REST endpoint <code>GET /events</code>. GEP's own measurements since 26 September 2026 show:</p>
+<ul>
+  <li>The endpoint returns the latest 300 public events in three pages of 100; page 4 is refused. The feed runs about 300 seconds behind real time.</li>
+  <li>The feed is one snapshot per second, the same for every client: reads within the same second return the same pages, so more collectors add availability, not coverage.</li>
+  <li>Page 1 holds Push, Create and Delete events; pages 2 and 3 hold all other types.</li>
+  <li>Consecutive snapshots of page 1 do not overlap. Each shows about 100 events, and in most hours GitHub publishes more Push, Create and Delete events per second than one page holds, so a share of them is never shown to any client, however often it reads. Page 1 also skips 5 to 9 percent of seconds for every client.</li>
+  <li>Events of the other types fit pages 2 and 3 and are shown almost completely.</li>
+  <li>Event ids follow the order in which GitHub publishes events, not <code>created_at</code>. Since 8 October 2025 there are two id sequences: one for Push, Create and Delete events and one for all other types.</li>
+</ul>
+
+<h2>Collection</h2>
+<p>Two collectors run on two hosts, a workstation and a rented server. Each reads page 1 about four times a second and pages 2 and 3 once a second; together they send about 42,000 requests an hour. They authenticate with pooled credentials: 48 installations of eight GitHub Apps and five personal access tokens. GEP caps its own use at 50,000 requests an hour, identifies itself with the User-Agent <code>gep-collector/&lt;version&gt; (GitHub Events Preservation)</code>, backs off on every rate-limit response, and requests REST API version <code>2022-11-28</code>. Each collector writes every event the first time it sees it, with the time and position of that read, and a record of every request.</p>
+
+<h2>Sealing</h2>
+<p>Five minutes after an hour ends, GEP merges the collectors' records of that hour by (<code>id</code>, <code>type</code>), keeps the first sighting of each event and notes which collectors received it, and writes the hour as one compressed file sorted by (<code>created_at</code>, <code>id</code>), with its key list and a manifest that carries SHA-256 checksums of the files. Sealing waits while a collector's data is still being transferred; data of a collector that arrives after its hour was sealed is merged into a new version of the hour. A sealed version is never overwritten.</p>
+
+<h2 id="completeness">Completeness measurement</h2>
+<p>For every hour and each id sequence, GEP estimates how many events the feed never showed and how many it showed but GEP did not record. Within a sequence, each page read covers a contiguous range of ids. Over the hour, the ranges GEP read form the covered span, and every stretch of ids between covered ranges is classified by the reads that showed its two edges:</p>
+<ul>
+  <li><strong>Unexposed.</strong> The stretch lies between two consecutive snapshots, or between snapshots the page skipped while GEP was reading it at least once a second. The feed never showed these events.</li>
+  <li><strong>Missed.</strong> GEP's own reads had a hole of more than a second there, so a snapshot may have been served without being read. A missed stretch is charged at most one page of events per unread snapshot; the rest of it counts as unexposed.</li>
+</ul>
+<p>The number of events in a stretch is its length in ids times the density of recorded events per id in that sequence and hour. Each manifest reports, per sequence, the estimated events unexposed and missed and the <strong>exposure rate</strong>, the estimated share of the sequence's events that the feed showed; and for the hour the <strong>capture rate</strong>, the estimated share of the shown events that GEP recorded. The two collectors give a second check: the manifest counts the events seen by one or both and reports the Chapman estimate of the hour's total, a lower bound because both read the same feed.</p>
+
+<h3 id="status">Status of an hour</h3>
+<div class="table"><table>
+  <tr><th>Status</th><th>Rule</th></tr>
+  <tr><td class="status-partial">partial</td><td>The hour has no events; or a collector that ran during the hour has no data for it, or had not confirmed the hour complete when it was sealed; or no collector read the feed for more than 60 seconds in total.</td></tr>
+  <tr><td class="status-degraded">degraded</td><td>At least one event presumed missed; or a shorter interruption (more than 10 seconds without a read); or an unfinished or truncated collector file was used.</td></tr>
+  <tr><td class="status-ok">ok</td><td>None of the above.</td></tr>
+</table></div>
+<p>A configured collector that did not run during the hour is listed in <code>pollers_missing</code> without lowering the status.</p>
+
+<h2>Measurements so far</h2>
+<p>Over the 1,303 hours from 26 September 2026, 11:00, to 19 November 2026, 17:00 UTC:</p>
+<div class="table"><table>
+  <tr><th>Measure</th><th>Value</th></tr>
+  <tr><td>Push, Create and Delete events the feed showed, per hour</td><td>median 61.1% (10th to 90th percentile: 50.1 to 73.5%); 55.6% in the first two weeks, 68.5% in the last two; lower at weekends</td></tr>
+  <tr><td>Events of other types the feed showed, per hour</td><td>median 99.85% (10th percentile: 98.87%)</td></tr>
+  <tr><td>Shown events that GEP recorded, per hour</td><td>median 100% (10th percentile: 99.97%; 1st percentile: 98.83%)</td></tr>
+  <tr><td>Events the feed never showed (estimate)</td><td>304 million, 26% of the estimated total</td></tr>
+  <tr><td>Events GEP missed (estimate)</td><td>695,306, 0.08% of the events recorded</td></tr>
+  <tr><td>Hours <code>ok</code>, <code>degraded</code>, <code>partial</code></td><td>670, 623, 10</td></tr>
+</table></div>
+
+<h2>Changes in GitHub's feed</h2>
+<p>Confirmed changes to the feed and its payloads, newest first.</p>
+<div class="table"><table>
+  <tr><th>Date</th><th>Change</th><th>Source</th></tr>
+  <tr><td>2026-09-29</td><td>About half of page-1 answers carry a <code>Last-Modified</code> 2,500 to 2,800 seconds behind their <code>Date</code> header instead of about 300 seconds, on content also served under its own second (in some hours in October, in every hour since 27 October). Pages 2 and 3 are not affected. GEP 0.1.3 ignores these labels in its measurement; hours sealed earlier were reassessed in new manifest versions.</td><td>GEP request records</td></tr>
+  <tr><td>2026-03-10</td><td>REST API version <code>2026-03-10</code> released; it removes fields that appear in event payloads (<code>assignee</code>, <code>merge_commit_sha</code>, <code>has_downloads</code>, <code>use_squash_pr_title_as_default</code>). GEP requests version <code>2022-11-28</code>.</td><td><code>GET /versions</code>; GitHub REST API breaking changes</td></tr>
+  <tr><td>2025-10-08</td><td>Event ids restarted: the single sequence ended near 55.79 billion; Push, Create and Delete events draw from one new sequence (5.07 billion on 8 October 2025) and all other types from another (3.93 billion). Ids of 2026 repeat ids of 2020 and 2021.</td><td>Event ids in GH Archive files</td></tr>
+  <tr><td>2025-10-07</td><td>Smaller payloads in the Events API: most <code>pull_request</code> fields (the payload keeps <code>base</code>, <code>head</code>, <code>id</code>, <code>number</code> and <code>url</code>), the push commit list and counts, and <code>author_association</code> removed.</td><td><a href="https://github.blog/changelog/2025-08-08-upcoming-changes-to-github-events-api-payloads/">GitHub changelog, 8 August 2025</a></td></tr>
+</table></div>
+</div></main>
+
+<footer class="site"><div class="wrap">GEP (GitHub Events Preservation). Times are UTC.</div></footer>
+</body>
+</html>

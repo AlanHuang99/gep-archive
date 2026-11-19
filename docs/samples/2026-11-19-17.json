@@ -1,0 +1,165 @@
+{
+  "gep_manifest": 1,
+  "hour": "2026-11-19T17:00:00Z",
+  "version": 1,
+  "supersedes": null,
+  "reason": null,
+  "sealed_at": "2026-11-19T18:05:09.390707Z",
+  "gep_version": "0.1.4",
+  "api_version": "2022-11-28",
+  "file": "archive/raw/2026/11/19/2026-11-19-17.ndjson.gz",
+  "bytes": 539670897,
+  "sha256": "64ce69e8a81f2b69d0acfb207d1959aa4dcbea9b14b58c309505043097aaadbd",
+  "events": 766276,
+  "keys_file": "archive/keys/2026/11/19/2026-11-19-17.keys.gz",
+  "keys_sha256": "6f3bd4d732212b6b85195c7f1f84035e41cef6331788a40538b64c2d77e99fa5",
+  "variants_file": "archive/variants/2026/11/19/2026-11-19-17.ndjson.gz",
+  "telemetry_files": {
+    "a": "archive/telemetry/a/2026/11/19/2026-11-19-17.ndjson.gz",
+    "b": "archive/telemetry/b/2026/11/19/2026-11-19-17.ndjson.gz"
+  },
+  "status": "degraded",
+  "status_reasons": [
+    "about 584 events presumed missed during sampling holes"
+  ],
+  "by_type": {
+    "CommitCommentEvent": 614,
+    "CreateEvent": 38691,
+    "DeleteEvent": 18372,
+    "DiscussionEvent": 172,
+    "ForkEvent": 4476,
+    "GollumEvent": 384,
+    "IssueCommentEvent": 87720,
+    "IssuesEvent": 65000,
+    "MemberEvent": 1878,
+    "PublicEvent": 2312,
+    "PullRequestEvent": 150276,
+    "PullRequestReviewCommentEvent": 23877,
+    "PullRequestReviewEvent": 41977,
+    "PushEvent": 292596,
+    "ReleaseEvent": 14960,
+    "WatchEvent": 22971
+  },
+  "by_sequence": {
+    "other": {
+      "events": 416617,
+      "id_min": 20666114956,
+      "id_max": 20672268751
+    },
+    "git": {
+      "events": 349659,
+      "id_min": 27643264641,
+      "id_max": 27647041273
+    }
+  },
+  "created_at": {
+    "min": "2018-08-13T16:19:41Z",
+    "max": "2026-11-19T17:54:58Z",
+    "lag_s": {
+      "p50": 7862.719925999641,
+      "p90": 128222.58293199539,
+      "p99": 157772.6658871174,
+      "max": 260933082.1361339
+    }
+  },
+  "pollers": {
+    "a": {
+      "files": [
+        {
+          "name": "a_20261119T170000Z_46104.ndjson.gz",
+          "bytes": 556185853,
+          "lines": 757705,
+          "truncated": 0
+        }
+      ],
+      "lines": 757705,
+      "first_sightings": 399132,
+      "truncated_lines": 0,
+      "bad_lines": 0,
+      "ticks": 14117,
+      "requests": 21085,
+      "errors": 41,
+      "gap_ticks": 3662,
+      "skipped_snapshots_p1": 1909
+    },
+    "b": {
+      "files": [
+        {
+          "name": "b_20261119T170001Z_377950.ndjson.gz",
+          "bytes": 553304960,
+          "lines": 755107,
+          "truncated": 0
+        }
+      ],
+      "lines": 755107,
+      "first_sightings": 367144,
+      "truncated_lines": 0,
+      "bad_lines": 0,
+      "ticks": 13871,
+      "requests": 20729,
+      "errors": 49,
+      "gap_ticks": 3656,
+      "skipped_snapshots_p1": 2146
+    }
+  },
+  "pollers_missing": [],
+  "overlap": {
+    "a_only": 11169,
+    "b_only": 8709,
+    "both": 746398
+  },
+  "completeness": {
+    "snapshots": {
+      "1": {
+        "seen": 1863,
+        "expected": 3792,
+        "off_clock_reads": 13220
+      },
+      "2": {
+        "seen": 3543,
+        "expected": 3603,
+        "off_clock_reads": 0
+      },
+      "3": {
+        "seen": 3103,
+        "expected": 3603,
+        "off_clock_reads": 0
+      }
+    },
+    "git": {
+      "ids_seen": 349855,
+      "covered_id_span": 3023841,
+      "density": 0.11569887437864623,
+      "gaps_unexposed": 998,
+      "gaps_page_skips": 2599,
+      "est_unexposed": 87294.56932093989,
+      "gaps_missed": 1,
+      "est_missed": 28.23052534838968,
+      "est_exposure_rate": 0.8002329402468331
+    },
+    "other": {
+      "ids_seen": 417097,
+      "covered_id_span": 6092051,
+      "density": 0.06846577614008813,
+      "gaps_unexposed": 1872,
+      "gaps_page_skips": 11,
+      "est_unexposed": 3986.8191425186465,
+      "gaps_missed": 9,
+      "est_missed": 556.2274332568785,
+      "est_exposure_rate": 0.9905337194851855
+    },
+    "boundary_requests": {
+      "a": 7,
+      "b": 0
+    },
+    "chapman_total": 766406.3201384246,
+    "est_capture_rate": 0.9992378561803003
+  },
+  "tick_holes": [],
+  "dedup": {
+    "cross_hour_dropped": 138,
+    "variants": 175
+  },
+  "bad_ids": 0,
+  "merged_from_version": null
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>GEP: GitHub Events Preservation</title>
+<meta name="description" content="A continuous record of GitHub's public events feed with an hourly measurement of completeness.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="name" href="./">GEP <span>GitHub Events Preservation</span></a>
+  <nav class="site">
+    <a href="./" aria-current="page">Overview</a>
+    <a href="data.html">Data</a>
+    <a href="method.html">Method</a>
+    <a href="gaps.html">Known gaps</a>
+  </nav>
+</div></header>
+
+<main><div class="wrap">
+<h1>GEP: GitHub Events Preservation</h1>
+<p class="lead">GEP keeps a continuous record of GitHub's public events feed. Every hour it publishes the events it received together with a measurement of how complete that hour is.</p>
+
+<dl class="facts">
+  <div><dt>Collecting since</dt><dd>26 Sep 2026</dd></div>
+  <div><dt>Hours sealed</dt><dd>1,303</dd></div>
+  <div><dt>Events</dt><dd>859,204,743</dd></div>
+  <div><dt>Recent daily volume</dt><dd>about 17 million</dd></div>
+</dl>
+<p class="note">Figures cover 26 September 2026, 11:00 UTC, to 19 November 2026, 17:00 UTC. The <code>hours</code> table in BigQuery holds the current figures for every hour.</p>
+
+<p>Each hour of events is kept exactly as GitHub's REST API returned them, with a small envelope that records when GEP first received each event and which of its collectors received it. Each hour has a manifest with its counts, checksums, status and estimates of the events the feed never showed and of the events GEP missed. A sealed hour is never overwritten; a correction is released as a new version of that hour with its reason.</p>
+
+<h2>Access</h2>
+<p>Anyone with a Google account can read the data. GEP pays for storage. Queries, downloads and other operations are billed to the user's own Google Cloud project.</p>
+
+<h3>BigQuery</h3>
+<p>Dataset <code>gep-archive.gep</code> in the <code>US</code> location, updated every hour:</p>
+<div class="table"><table>
+  <tr><th>Table</th><th>Contents</th></tr>
+  <tr><td><code>events</code></td><td>One row per event: the top-level fields as columns, the payload as JSON. Partitioned by day, clustered by event type, repository and actor.</td></tr>
+  <tr><td><code>pull_requests</code>, <code>pushes</code>, <code>issues</code>, <code>issue_comments</code></td><td>The payload fields of these event types as typed columns.</td></tr>
+  <tr><td><code>hours</code></td><td>One row per sealed hour with its status and completeness measurement.</td></tr>
+  <tr><td><code>events_gharchive</code></td><td>A view of <code>events</code> in GH Archive's column layout.</td></tr>
+</table></div>
+<pre><code>SELECT type, COUNT(*) AS events
+FROM `gep-archive.gep.events`
+WHERE event_date = '2026-11-18'
+GROUP BY type
+ORDER BY events DESC;</code></pre>
+<p>The event tables require a filter on <code>event_date</code>. Columns, partitioning and more examples are on the <a href="data.html">data page</a>. Queries run in, and are billed to, the project of the user who runs them (<a href="https://cloud.google.com/bigquery/pricing">BigQuery pricing</a>).</p>
+
+<h3>Cloud Storage</h3>
+<p>Bucket <code>gs://gep-archive</code> holds the archive of record: for every hour, one compressed file of newline-delimited JSON, its manifest and its list of event keys. The bucket uses <a href="https://cloud.google.com/storage/docs/requester-pays">Requester Pays</a>: every request names the requester's billing project, which pays for operations, data retrieval and network transfer.</p>
+<pre><code>gcloud storage ls --billing-project=YOUR_PROJECT 'gs://gep-archive/manifests/2026/11/18/*'
+gcloud storage cp --billing-project=YOUR_PROJECT gs://gep-archive/raw/2026/11/18/2026-11-18-12.ndjson.gz .</code></pre>
+<p>The folders <code>raw/</code>, <code>keys/</code>, <code>variants/</code> and <code>manifests/</code> are readable. Files older than 30 days are kept in the Archive storage class, which adds a retrieval charge per gigabyte read.</p>
+
+<h2>How it is collected</h2>
+<p>Two collectors on two hosts read GitHub's <code>GET /events</code> endpoint around the clock, about 42,000 requests an hour, with pooled credentials. Every hour their records are merged, deduplicated, checked and sealed. The completeness of each hour is estimated from gaps in GitHub's event id sequences. The <a href="method.html">method page</a> describes the feed, the collection and the measurement; the <a href="gaps.html">known gaps page</a> lists the hours with the largest losses.</p>
+
+<h2>Release status</h2>
+<p>This is GEP's first release. Table and file layouts may change; changes will be listed on this site.</p>
+<p>GEP's documentation and its compilation of the data (envelopes, manifests, completeness estimates and tables) are released under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International license</a> (CC BY 4.0). The events themselves are GitHub's public data, served by GitHub's REST API, and remain subject to <a href="https://docs.github.com/en/site-policy/github-terms/github-terms-of-service">GitHub's terms</a>.</p>
+
+<h2>Contact</h2>
+<p>Questions, corrections and removal requests: <a href="https://github.com/AlanHuang99/gep-archive/issues">open an issue</a>. GEP is maintained by Alan (Ao) Huang, Miami Business School, University of Miami.</p>
+</div></main>
+
+<footer class="site"><div class="wrap">GEP (GitHub Events Preservation). Times are UTC.</div></footer>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Known gaps: GEP</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="name" href="./">GEP <span>GitHub Events Preservation</span></a>
+  <nav class="site">
+    <a href="./">Overview</a>
+    <a href="data.html">Data</a>
+    <a href="method.html">Method</a>
+    <a href="gaps.html" aria-current="page">Known gaps</a>
+  </nav>
+</div></header>
+
+<main><div class="wrap">
+<h1>Known gaps</h1>
+<p>Every hour's status and completeness estimates are in the <code>hours</code> table and in the hour's manifest. This page lists the hours without complete data and the hours with the largest estimated losses, from 26 September 2026, 11:00, to 19 November 2026, 17:00 UTC. Events that the feed never showed are not losses of GEP; their estimates are described on the <a href="method.html#completeness">method page</a>.</p>
+
+<h2>Hours without complete data</h2>
+<div class="table"><table>
+  <tr><th>Hour (UTC)</th><th class="num">Events recorded</th><th>Cause</th></tr>
+  <tr><td>2026-09-26 11:00</td><td class="num">32,914</td><td>Collection began during this hour.</td></tr>
+  <tr><td>2026-11-15 08:00</td><td class="num">280,737</td><td>The host that seals the archive failed at about 08:30; the hour holds one collector's events up to then.</td></tr>
+  <tr><td>2026-11-15 09:00 to 16:00 (8 hours)</td><td class="num">0</td><td>The sealing host was down until 18:11; the second collector's files for these hours were not merged.</td></tr>
+</table></div>
+
+<h2>Hours with estimated losses over 1 percent</h2>
+<p>From 2026-10-18 18:00 to 2026-10-19 03:00 UTC, GitHub answered pages 2 and 3 with HTTP 502 errors and delays of 5 to 9 seconds for both collectors. GEP estimates that it missed 522,434 events in these nine hours, up to 19 percent of an hour's shown events.</p>
+<div class="table"><table>
+  <tr><th>Hour (UTC)</th><th>Status</th><th class="num">Events recorded</th><th class="num">Estimated missed</th><th class="num">Share of shown events</th></tr>
+  <tr><td>2026-09-26 21:00</td><td class="status-degraded">degraded</td><td class="num">568,871</td><td class="num">7,110</td><td class="num">1.2%</td></tr>
+  <tr><td>2026-10-18 19:00</td><td class="status-degraded">degraded</td><td class="num">624,877</td><td class="num">36,968</td><td class="num">5.6%</td></tr>
+  <tr><td>2026-10-18 20:00</td><td class="status-degraded">degraded</td><td class="num">552,127</td><td class="num">78,104</td><td class="num">12.4%</td></tr>
+  <tr><td>2026-10-18 21:00</td><td class="status-degraded">degraded</td><td class="num">493,309</td><td class="num">85,344</td><td class="num">14.7%</td></tr>
+  <tr><td>2026-10-18 22:00</td><td class="status-degraded">degraded</td><td class="num">502,218</td><td class="num">58,094</td><td class="num">10.4%</td></tr>
+  <tr><td>2026-10-18 23:00</td><td class="status-degraded">degraded</td><td class="num">459,212</td><td class="num">66,643</td><td class="num">12.7%</td></tr>
+  <tr><td>2026-10-19 00:00</td><td class="status-degraded">degraded</td><td class="num">431,034</td><td class="num">100,854</td><td class="num">19.0%</td></tr>
+  <tr><td>2026-10-19 01:00</td><td class="status-degraded">degraded</td><td class="num">482,022</td><td class="num">65,819</td><td class="num">12.0%</td></tr>
+  <tr><td>2026-10-19 02:00</td><td class="status-degraded">degraded</td><td class="num">571,532</td><td class="num">27,160</td><td class="num">4.5%</td></tr>
+  <tr><td>2026-10-19 03:00</td><td class="status-degraded">degraded</td><td class="num">622,490</td><td class="num">7,357</td><td class="num">1.2%</td></tr>
+  <tr><td>2026-10-19 07:00</td><td class="status-degraded">degraded</td><td class="num">571,749</td><td class="num">18,325</td><td class="num">3.1%</td></tr>
+  <tr><td>2026-10-20 02:00</td><td class="status-degraded">degraded</td><td class="num">585,436</td><td class="num">10,731</td><td class="num">1.8%</td></tr>
+  <tr><td>2026-10-20 08:00</td><td class="status-degraded">degraded</td><td class="num">732,524</td><td class="num">14,645</td><td class="num">2.0%</td></tr>
+  <tr><td>2026-11-15 08:00</td><td class="status-partial">partial</td><td class="num">280,737</td><td class="num">9,636</td><td class="num">3.3%</td></tr>
+</table></div>
+
+<h2>All hours</h2>
+<p>Across all 1,303 hours, GEP estimates that it missed 695,306 events, 0.08 percent of the events it recorded; outside the nine hours of 18 and 19 October, 172,872 events (0.02 percent). 670 hours are <code>ok</code>, 623 <code>degraded</code> and 10 <code>partial</code>. The median <code>degraded</code> hour is estimated to have missed 65 events. Each hour's estimates are in the <code>est_missed_git</code> and <code>est_missed_other</code> columns of the <code>hours</code> table.</p>
+</div></main>
+
+<footer class="site"><div class="wrap">GEP (GitHub Events Preservation). Times are UTC.</div></footer>
+</body>
+</html>

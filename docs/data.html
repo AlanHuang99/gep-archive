@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Data reference: GEP</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="name" href="./">GEP <span>GitHub Events Preservation</span></a>
+  <nav class="site">
+    <a href="./">Overview</a>
+    <a href="data.html" aria-current="page">Data</a>
+    <a href="method.html">Method</a>
+    <a href="gaps.html">Known gaps</a>
+  </nav>
+</div></header>
+
+<main><div class="wrap">
+<h1>Data reference</h1>
+<p>GEP publishes the same events in two forms: hourly files in Cloud Storage (<code>gs://gep-archive</code>), which are the archive of record, and tables in BigQuery (<code>gep-archive.gep</code>), loaded from those files every hour.</p>
+
+<h2>Keys and time</h2>
+<ul>
+  <li><strong>Event key.</strong> GitHub restarted its event ids on 8 October 2025 in two sequences, one for Push, Create and Delete events and one for all other types, and ids of 2026 repeat ids of 2020 and 2021. Within GEP an event is identified by (<code>id</code>, <code>type</code>); across archives that cover earlier years, by (<code>id</code>, <code>type</code>, <code>created_at</code>).</li>
+  <li><strong>Arrival hour.</strong> Each event is filed in the UTC hour in which GEP first received it. Push, Create and Delete events often reach the feed hours after their <code>created_at</code>; some events carry a <code>created_at</code> days or years earlier.</li>
+  <li><strong>Partition date.</strong> <code>event_date</code> is the date of <code>created_at</code>, or the date of arrival when <code>created_at</code> is missing, later than the arrival, or more than 24 hours before it (<code>backdated</code> marks the last case).</li>
+</ul>
+
+<h2>BigQuery</h2>
+<p>All tables are in the dataset <code>gep-archive.gep</code> (location <code>US</code>). <code>events</code> and the four typed tables are partitioned by <code>event_date</code> and require a filter on it.</p>
+<p>BigQuery bills a query by the columns it reads. A dry run reports the whole <code>payload</code> column as the upper bound, while a query that reads single fields of <code>payload</code> is billed far less than that bound. The typed tables hold the fields of the most common event types as columns and are the least expensive way to read them.</p>
+
+<h3><code>events</code></h3>
+<p>One row per event received by GEP. Clustered by <code>type</code>, <code>repo_name</code>, <code>actor_login</code>.</p>
+<div class="table"><table>
+  <tr><th>Column</th><th>Type</th><th>Meaning</th></tr>
+  <tr><td><code>event_id</code></td><td>INT64</td><td>GitHub event id</td></tr>
+  <tr><td><code>type</code></td><td>STRING</td><td>Event type, for example <code>PushEvent</code></td></tr>
+  <tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>Event time reported by GitHub</td></tr>
+  <tr><td><code>event_date</code></td><td>DATE</td><td>Partition date (see above)</td></tr>
+  <tr><td><code>backdated</code></td><td>BOOL</td><td><code>created_at</code> is more than 24 hours before GEP first received the event</td></tr>
+  <tr><td><code>repo_id</code>, <code>repo_name</code></td><td>INT64, STRING</td><td>Repository</td></tr>
+  <tr><td><code>actor_id</code>, <code>actor_login</code>, <code>actor_display_login</code></td><td>INT64, STRING, STRING</td><td>Account that caused the event</td></tr>
+  <tr><td><code>org_id</code>, <code>org_login</code></td><td>INT64, STRING</td><td>Organization, when the repository belongs to one</td></tr>
+  <tr><td><code>public</code></td><td>BOOL</td><td>As sent by GitHub</td></tr>
+  <tr><td><code>payload</code></td><td>JSON</td><td>Event payload as GitHub sent it; read fields with dot notation, for example <code>JSON_VALUE(payload.action)</code></td></tr>
+  <tr><td><code>observed_at</code></td><td>TIMESTAMP</td><td>When GEP first received the event</td></tr>
+  <tr><td><code>archive_hour</code></td><td>TIMESTAMP</td><td>Arrival hour: the hourly file that holds the event; joins <code>hours.hour</code></td></tr>
+  <tr><td><code>seen_by</code></td><td>ARRAY&lt;STRING&gt;</td><td>GEP collectors that received the event</td></tr>
+  <tr><td><code>sha</code></td><td>STRING</td><td>First 16 hex digits of BLAKE2b over the event with sorted keys</td></tr>
+  <tr><td><code>variants</code></td><td>INT64</td><td>Number of other contents GEP received for this event key, when there were any</td></tr>
+</table></div>
+
+<h3>Typed tables</h3>
+<p>Each typed table holds the events of one type with these columns first: <code>event_id</code>, <code>created_at</code>, <code>event_date</code>, <code>backdated</code>, <code>archive_hour</code>, <code>repo_id</code>, <code>repo_name</code>, <code>actor_id</code>, <code>actor_login</code>, <code>org_login</code>. The remaining columns are payload fields; a field GitHub did not send is null, or an empty array for list columns.</p>
+<div class="table"><table>
+  <tr><th>Table</th><th>Event type</th><th>Payload columns</th></tr>
+  <tr><td><code>pull_requests</code></td><td><code>PullRequestEvent</code></td><td><code>action</code>, <code>pr_number</code>, <code>pr_id</code>, <code>base_ref</code>, <code>base_sha</code>, <code>base_repo_id</code>, <code>base_repo_name</code>, <code>head_ref</code>, <code>head_sha</code>, <code>head_repo_id</code>, <code>head_repo_name</code>, <code>label</code> (the label a <code>labeled</code> or <code>unlabeled</code> action names), <code>labels</code>, <code>assignees</code></td></tr>
+  <tr><td><code>pushes</code></td><td><code>PushEvent</code></td><td><code>push_id</code>, <code>push_ref</code>, <code>push_head</code>, <code>push_before</code>, <code>repository_id</code></td></tr>
+  <tr><td><code>issues</code></td><td><code>IssuesEvent</code></td><td><code>action</code>, <code>issue_number</code>, <code>issue_id</code>, <code>issue_title</code>, <code>issue_body</code>, <code>issue_state</code>, <code>issue_state_reason</code>, <code>issue_author</code>, <code>issue_author_id</code>, <code>issue_author_type</code>, <code>issue_comments</code>, <code>issue_created_at</code>, <code>issue_updated_at</code>, <code>issue_closed_at</code>, <code>issue_locked</code>, <code>issue_type</code>, <code>milestone</code>, <code>labels</code>, <code>assignees</code></td></tr>
+  <tr><td><code>issue_comments</code></td><td><code>IssueCommentEvent</code></td><td><code>action</code>, <code>comment_id</code>, <code>comment_body</code>, <code>comment_created_at</code>, <code>comment_updated_at</code>, <code>comment_author</code>, <code>comment_author_id</code>, <code>comment_author_type</code>, <code>via_app</code> (slug of the GitHub App that posted the comment), <code>issue_number</code>, <code>issue_id</code>, <code>issue_title</code>, <code>issue_state</code>, <code>on_pull_request</code></td></tr>
+</table></div>
+<p class="note">Since October 2025 GitHub sends smaller payloads for pull request and push events (<a href="https://github.blog/changelog/2025-08-08-upcoming-changes-to-github-events-api-payloads/">GitHub changelog</a>); the typed columns carry what the feed still sends.</p>
+
+<h3><code>hours</code></h3>
+<p>One row per sealed hour (its latest version), to join with any event table on <code>archive_hour = hour</code>.</p>
+<div class="table"><table>
+  <tr><th>Column</th><th>Meaning</th></tr>
+  <tr><td><code>hour</code></td><td>Arrival hour (UTC)</td></tr>
+  <tr><td><code>version</code></td><td>Version of the hour; a correction writes a new version</td></tr>
+  <tr><td><code>status</code></td><td><code>ok</code>, <code>degraded</code> (events presumed missed, or a short interruption) or <code>partial</code> (a collector's data or the whole hour missing); see the <a href="method.html#status">method page</a></td></tr>
+  <tr><td><code>events</code>, <code>events_git</code>, <code>events_other</code></td><td>Events recorded: all, the Push, Create and Delete sequence, and all other types</td></tr>
+  <tr><td><code>est_unexposed_git</code>, <code>est_unexposed_other</code></td><td>Estimated events the feed never showed, per sequence</td></tr>
+  <tr><td><code>est_missed_git</code>, <code>est_missed_other</code></td><td>Estimated events the feed showed and GEP did not record, per sequence</td></tr>
+  <tr><td><code>est_exposure_rate_git</code>, <code>est_exposure_rate_other</code></td><td>Estimated share of each sequence's events that the feed showed</td></tr>
+  <tr><td><code>est_capture_rate</code></td><td>Estimated share of the shown events that GEP recorded</td></tr>
+  <tr><td><code>pollers_missing</code>, <code>status_reasons</code></td><td>Collectors missing at sealing, and the reasons for the status</td></tr>
+  <tr><td><code>sealed_at</code>, <code>gep_version</code></td><td>When and by which version of GEP the hour was sealed</td></tr>
+  <tr><td><code>manifest</code></td><td>The hour's full manifest as JSON</td></tr>
+</table></div>
+
+<h3><code>events_gharchive</code></h3>
+<p>A view of <code>events</code> with GH Archive's columns: <code>type</code>, <code>public</code>, <code>payload</code> (a JSON string), <code>repo</code>, <code>actor</code> and <code>org</code> (records), <code>created_at</code>, <code>id</code> (a string) and <code>other</code>, plus <code>event_date</code> and <code>archive_hour</code>. Queries written for that layout run against it with a new table name and a filter on <code>event_date</code>. Reading <code>payload</code> through the view reads whole payloads.</p>
+
+<h2>Example queries</h2>
+<p>Events by type on one day:</p>
+<pre><code>SELECT type, COUNT(*) AS events
+FROM `gep-archive.gep.events`
+WHERE event_date = '2026-11-18'
+GROUP BY type
+ORDER BY events DESC;</code></pre>
+<p>Status and completeness of recent hours:</p>
+<pre><code>SELECT hour, status, events, est_exposure_rate_git, est_exposure_rate_other, est_capture_rate
+FROM `gep-archive.gep.hours`
+WHERE hour &gt;= '2026-11-18'
+ORDER BY hour;</code></pre>
+<p>One payload field, read from the JSON column:</p>
+<pre><code>SELECT JSON_VALUE(payload.action) AS action, COUNT(*) AS events
+FROM `gep-archive.gep.events`
+WHERE event_date = '2026-11-18' AND type = 'IssuesEvent'
+GROUP BY action
+ORDER BY events DESC;</code></pre>
+<p>Pull request actions in one repository over a week, from a typed table:</p>
+<pre><code>SELECT action, COUNT(*) AS events
+FROM `gep-archive.gep.pull_requests`
+WHERE event_date BETWEEN '2026-11-12' AND '2026-11-18'
+  AND repo_name = 'microsoft/vscode'
+GROUP BY action
+ORDER BY events DESC;</code></pre>
+<p>A query in GH Archive's layout:</p>
+<pre><code>SELECT repo.name AS repo, COUNT(*) AS stars
+FROM `gep-archive.gep.events_gharchive`
+WHERE event_date = '2026-11-18' AND type = 'WatchEvent'
+GROUP BY repo
+ORDER BY stars DESC
+LIMIT 20;</code></pre>
+<p>Events of complete hours only, by joining <code>hours</code>:</p>
+<pre><code>SELECT e.type, COUNT(*) AS events
+FROM `gep-archive.gep.events` AS e
+JOIN `gep-archive.gep.hours` AS h ON e.archive_hour = h.hour
+WHERE e.event_date = '2026-11-18' AND h.status = 'ok'
+GROUP BY e.type
+ORDER BY events DESC;</code></pre>
+
+<h2>Files in Cloud Storage</h2>
+<p>The bucket <code>gs://gep-archive</code> uses Requester Pays; every request needs <code>--billing-project=YOUR_PROJECT</code> (gcloud) or <code>userProject</code> (API). List with a prefix or a wildcard, for example <code>'gs://gep-archive/raw/2026/11/18/*'</code>.</p>
+<pre><code>raw/YYYY/MM/DD/YYYY-MM-DD-HH[.vN].ndjson.gz        the events of one arrival hour, one line per event
+keys/YYYY/MM/DD/YYYY-MM-DD-HH[.vN].keys.gz         the hour's keys, sorted "id type" lines
+variants/YYYY/MM/DD/YYYY-MM-DD-HH[.vN].ndjson.gz   other contents received for keys that had more than one
+manifests/YYYY/MM/DD/YYYY-MM-DD-HH[.vN].json       the hour's manifest; its presence means the hour is sealed</code></pre>
+<p>Version 1 of an hour has no suffix and is never overwritten. A correction is a new version (<code>.v2</code>, <code>.v3</code>) whose manifest gives the reason. A version that only revises the completeness measurement replaces the manifest and keeps the earlier data files, which its manifest names.</p>
+
+<h3>Event lines</h3>
+<p>Each line wraps the event exactly as GitHub returned it in an envelope; lines are sorted by (<code>created_at</code>, <code>id</code>):</p>
+<pre><code>{"gep":{"v":1,"observed_at":"2026-09-26T07:07:40.547123Z","poller":"a","tick":41152,"req":123456,"page":1,"pos":17,"sha":"9f2c61d04a7be311","seen_by":["a","b"]},"event":{...}}</code></pre>
+<ul>
+  <li><code>event</code>: the event object as GitHub returned it, key order kept. Taking <code>.event</code> of each line gives one event per line.</li>
+  <li><code>observed_at</code>: when the response that first contained the event was received; <code>poller</code>, <code>tick</code>, <code>req</code>, <code>page</code>, <code>pos</code>: which collector, read, page and position.</li>
+  <li><code>sha</code>: first 16 hex digits of BLAKE2b over the event with sorted keys. <code>seen_by</code>: every collector that received the event. <code>variants</code>: present when other contents were received for the same key.</li>
+</ul>
+
+<h3>Manifests</h3>
+<p>A manifest records the hour's identity and provenance (<code>hour</code>, <code>version</code>, <code>supersedes</code>, <code>reason</code>, <code>sealed_at</code>, <code>gep_version</code>, <code>api_version</code>), the files written with their SHA-256 checksums, the event counts by type and by id sequence, the spread of arrival lags, per-collector statistics, the <code>status</code> with its reasons, and the completeness measurement: snapshots read per page, and per sequence the ids seen, the covered id span, the estimated events unexposed and missed, and the exposure and capture rates. Example: <a href="samples/2026-11-19-17.json">manifest of 2026-11-19, 17:00 UTC</a>.</p>
+</div></main>
+
+<footer class="site"><div class="wrap">GEP (GitHub Events Preservation). Times are UTC.</div></footer>
+</body>
+</html>
